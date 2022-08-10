@@ -1,5 +1,6 @@
 ## cmd-inject-header
 A simple tool to check command injection in headers of http request
+
 Designed to make easy check command injection in headers for bug hunter, pentester, red team-er
 
 ### Inspired by
