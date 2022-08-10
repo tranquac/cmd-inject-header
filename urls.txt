@@ -1,0 +1,2 @@
+http://vanquac.site:8001/
+https://www.tranquac.com/
