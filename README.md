@@ -3,6 +3,7 @@ A simple tool to check command injection in headers of http request
 Designed to make easy check command injection in headers for bug hunter, pentester, red team-er
 
 ### Inspired by
+![https://raw.githubusercontent.com/tranquac/cmd-inject-header/master/image/insprired.png](https://raw.githubusercontent.com/tranquac/cmd-inject-header/master/image/insprired.png)
 ### Usage
 ```
 Usage of cmd-inject-header:
