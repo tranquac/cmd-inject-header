@@ -17,6 +17,6 @@ Usage of cmd-inject-header:
   -pl string
         Path to list payload file
   -ur string
-        Path to list url file
+        Path to list url file (Sample URL: http://example.com/)
 ```
-Examples: `go run . -hd h.txt -pl payloads.txt -ur urls.txt -it xxx.burpcollaborator.net`
+Examples: `go run . -hd headers_common.txt -pl payloads.txt -ur urls.txt -it xxx.burpcollaborator.net`

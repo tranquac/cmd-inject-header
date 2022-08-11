@@ -59,12 +59,12 @@ func Url_Execute(headers, payloads, urls, interact_server string) {
 		log.Fatal(err)
 	}
 
-	//NO USING goroutin
+	//NO USING goroutine
 	for _, url := range urls2 {
 		request(url, headers, payloads, interact_server)
 	}
 
-	//USING goroutin
+	//USING goroutine
 	//wg.Wait()
 	//close(results)
 	//results := make(chan string)
@@ -122,34 +122,39 @@ func request(urls, headers, payloads, interact_server string) {
 
 	for _, header := range lines {
 		for _, payload := range links2 {
-			req, err := http.NewRequest("GET", urls, nil)
-			if err != nil {
+			req, err := http.NewRequest("POST", urls, nil)
+			req2, err2 := http.NewRequest("POST", urls+"tomake404", nil) //testing for 404 not found
+			if err != nil || err2 != nil {
 				fmt.Println(err)
 			}
 			if header != "User-Agent" {
 				req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.100 Safari/537.36")
+				req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.100 Safari/537.36")
 			}
 			req.Header.Add(header, payload)
+			req2.Header.Add(header, payload)
 			fmt.Printf("[+] Testing: \t %s\n", header)
 			fmt.Printf("[+] Requested: \t %d\n", total_requests)
-			total_requests += 1
+			total_requests += 2
 			if err != nil {
 				return
 			}
 			resp, err := httpClient.Do(req)
-			if err != nil {
+			resp2, err2 := httpClient.Do(req2)
+			if err != nil || err2 != nil{
 				fmt.Println(err)
 				return
 			}
 
 			res, err := httputil.DumpRequest(req, true)
-			if err != nil {
+			res2, err2 := httputil.DumpRequest(req2, true)
+			if err != nil || err2 != nil{
 				log.Fatal(err)
 			}
 			fmt.Print(string(res))
 			fmt.Println(resp.StatusCode)
+			fmt.Print(string(res2))
+			fmt.Println(resp2.StatusCode)
 		}
-
 	}
-
 }
