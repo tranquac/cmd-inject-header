@@ -7,13 +7,9 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"os"
-	"strings"
 	"time"
 )
-
-var total_requests = 0
 
 var httpClient = &http.Client{
 	Transport: transport,
@@ -28,133 +24,62 @@ var transport = &http.Transport{
 	}).DialContext,
 }
 
-func Url_hi() {
-	fmt.Println("url_hi")
-}
-
-func Url_Execute(headers, payloads, urls, interact_server string) {
-	//PIPELINE urls
-	//var urls []string
-	// sc := bufio.NewScanner(os.Stdin)
-	// for sc.Scan() {
-	// 	urls = append(urls, sc.Text())
-	// }
-	// if err := sc.Err(); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	//READ urls from file
-	url_file, err := os.Open(urls)
+func ReadFromFile(filename string) []string {
+	url_file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal("File could not be read\n")
 	}
 	defer url_file.Close()
-	//time.Sleep(time.Millisecond * 10)
 	uScanner := bufio.NewScanner(url_file)
-	var urls2 []string
+	var urls []string
 	for uScanner.Scan() {
-		urls2 = append(urls2, uScanner.Text())
+		urls = append(urls, uScanner.Text())
 	}
 	if err := uScanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-
-	//NO USING goroutine
-	for _, url := range urls2 {
-		request(url, headers, payloads, interact_server)
-	}
-
-	//USING goroutine
-	//wg.Wait()
-	//close(results)
-	//results := make(chan string)
-	//var wg sync.WaitGroup
-	//for _, url := range urls {
-	//wg.Add(1)
-	//go func(url string) {
-	//request(url, headers, payloads)
-	//defer wg.Done()
-	//}(url)
-	//}
-	//wg.Wait()
-	//close(results)
+	return urls
 }
 
-func request(urls, headers, payloads, interact_server string) {
+func MakeRequestHeader(url string, headers, payloads []string, ch chan<- string) {
+	chh := make(chan string)
+	for _, header := range headers {
+		go MakeRequestPayload(url, header, payloads, chh) // Using all payload with each header
+	}
+	for range headers {
+		fmt.Println(<-chh)
+	}
+	ch <- fmt.Sprintf("Done Url %s", url)
+}
 
-	file, err := os.Open(headers)
+func MakeRequestPayload(url, header string, payloads []string, ch chan<- string) { // Make request with each payload in payload
+	chh := make(chan string)
+	for _, payload := range payloads {
+		go MakeRequestFinal(url, header, payload, chh) // Using all payload with each header
+	}
+	for range payloads {
+		fmt.Println(<-chh)
+	}
+	ch <- fmt.Sprintf("Done Header %s", header)
+}
+
+func MakeRequestFinal(url, header, payload string, ch chan<- string) {
+	start := time.Now()
+	// resp, _ := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal("File could not be read\n")
+		fmt.Println(err)
 	}
-	defer file.Close()
-	//time.Sleep(time.Millisecond * 10)
-	hScanner := bufio.NewScanner(file)
-	var lines []string
-	for hScanner.Scan() {
-		lines = append(lines, hScanner.Text())
+	if header != "User-Agent" {
+		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.100 Safari/537.36")
 	}
-	if err := hScanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Println(lines)
-
-	payload_file, err := os.Open(payloads)
-	if err != nil {
-		log.Fatal("File could not be read")
-	}
-	defer payload_file.Close()
-	//time.Sleep(time.Millisecond * 10)
-	pScanner := bufio.NewScanner(payload_file)
-	var links []string
-	var links2 []string
-	for pScanner.Scan() {
-		links = append(links, pScanner.Text())
-	}
-	if err := pScanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	//change interact_server
-	for _, payload := range links {
-		payload := strings.Replace(payload, "INTERACT_SERVER", interact_server, -1)
-		links2 = append(links2, payload)
-	}
-
-	for _, header := range lines {
-		for _, payload := range links2 {
-			req, err := http.NewRequest("POST", urls, nil)
-			req2, err2 := http.NewRequest("POST", urls+"tomake404", nil) //testing for 404 not found
-			if err != nil || err2 != nil {
-				fmt.Println(err)
-			}
-			if header != "User-Agent" {
-				req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.100 Safari/537.36")
-				req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.100 Safari/537.36")
-			}
-			req.Header.Add(header, payload)
-			req2.Header.Add(header, payload)
-			fmt.Printf("[+] Testing: \t %s\n", header)
-			fmt.Printf("[+] Requested: \t %d\n", total_requests)
-			total_requests += 2
-			if err != nil {
-				return
-			}
-			resp, err := httpClient.Do(req)
-			resp2, err2 := httpClient.Do(req2)
-			if err != nil || err2 != nil{
-				fmt.Println(err)
-				return
-			}
-
-			res, err := httputil.DumpRequest(req, true)
-			res2, err2 := httputil.DumpRequest(req2, true)
-			if err != nil || err2 != nil{
-				log.Fatal(err)
-			}
-			fmt.Print(string(res))
-			fmt.Println(resp.StatusCode)
-			fmt.Print(string(res2))
-			fmt.Println(resp2.StatusCode)
-		}
+	req.Header.Add(header, payload)
+	resp, err := httpClient.Do(req)
+	if err == nil {
+		secs := time.Since(start).Seconds()
+		status := resp.StatusCode
+		ch <- fmt.Sprintf("%.2f elapsed for URL: %s | StatusCode: %d | Header: %s | Payload: %s", secs, url, status, header, payload)
+	} else {
+		ch <- fmt.Sprintf("%v", err)
 	}
 }
